@@ -1,0 +1,43 @@
+export const ALL_PERMISSIONS = [
+  'MONITOR_VIEW',
+  'MONITOR_MANAGE',
+  'USERS_VIEW',
+  'USERS_MANAGE',
+  'ROLES_MANAGE',
+  'TEAMS_VIEW',
+  'TEAMS_MANAGE',
+  'CAMPAIGNS_VIEW',
+  'CAMPAIGNS_MANAGE',
+  'FORMS_MANAGE',
+  'SCRIPTS_MANAGE',
+  'BLACKLIST_MANAGE',
+  'IMPORT_HISTORY_VIEW',
+  'REPORTS_VIEW',
+  'PROVIDERS_MANAGE',
+  'MEDIA_VIEW',
+  'CAUSE_CODES_VIEW',
+  'SETTINGS_MANAGE',
+] as const;
+
+export type Permission = typeof ALL_PERMISSIONS[number];
+
+export const PERMISSION_LABELS: Record<string, string> = {
+  MONITOR_VIEW:        'Просмотр монитора',
+  MONITOR_MANAGE:      'Управление монитором',
+  USERS_VIEW:          'Просмотр пользователей',
+  USERS_MANAGE:        'Управление пользователями',
+  ROLES_MANAGE:        'Управление ролями',
+  TEAMS_VIEW:          'Просмотр команд/операторов',
+  TEAMS_MANAGE:        'Управление командами/операторами',
+  CAMPAIGNS_VIEW:      'Просмотр кампаний',
+  CAMPAIGNS_MANAGE:    'Управление кампаниями',
+  FORMS_MANAGE:        'Управление формами',
+  SCRIPTS_MANAGE:      'Управление скриптами',
+  BLACKLIST_MANAGE:    'Управление чёрным списком',
+  IMPORT_HISTORY_VIEW: 'История импорта',
+  REPORTS_VIEW:        'Просмотр отчётов',
+  PROVIDERS_MANAGE:    'Управление провайдерами',
+  MEDIA_VIEW:          'Просмотр медиафайлов',
+  CAUSE_CODES_VIEW:    'Просмотр кодов завершения',
+  SETTINGS_MANAGE:     'Управление стопами',
+};
