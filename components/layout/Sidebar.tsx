@@ -8,11 +8,20 @@ import {
   LayoutDashboard, Users, UsersRound, PhoneCall,
   FileText, Plug, Mic, BarChart3, Headphones,
   PhoneIncoming, ShieldOff, BookOpen, LogOut, History, BookMarked, Shield, Settings,
+  type LucideIcon,
 } from 'lucide-react';
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  permission?: string;
+};
+type NavGroup = { section: string; items: NavItem[] };
 
 /** Each nav item may require one or more permissions (OR logic — any one is enough).
  *  Omitting `permission` means always visible. */
-const nav = [
+const nav: NavGroup[] = [
   {
     section: 'Мониторинг',
     items: [

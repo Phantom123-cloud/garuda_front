@@ -71,7 +71,7 @@ function PermissionPicker({
   const toggleGroup = (keys: string[]) => {
     const allOn = keys.every(k => value.includes(k));
     if (allOn) onChange(value.filter(p => !keys.includes(p)));
-    else onChange([...new Set([...value, ...keys])]);
+    else onChange(Array.from(new Set([...value, ...keys])));
   };
 
   const toggleAll = () => {
