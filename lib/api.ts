@@ -324,3 +324,51 @@ export interface Call {
 
 export type CreateTeamPayload = { name: string; managerId?: number | null };
 export type CreateOperatorPayload = { name: string; login: string; password: string; extension?: string; teamId?: number | null; canReceiveInbound?: boolean };
+
+// ─── Platform Admin API ───────────────────────────────────────────────────────
+export const platformApi = axios.create({ baseURL: '/api', withCredentials: true });
+
+platformApi.interceptors.response.use(
+  r => r,
+  err => {
+    if (err.response?.status === 401 && typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/platform') && path !== '/platform/login') {
+        window.location.href = '/platform/login';
+      }
+    }
+    return Promise.reject(err);
+  },
+);
+
+export const platformAuthApi = {
+  login: (login: string, password: string) =>
+    platformApi.post('/platform/auth/login', { login, password }).then(r => r.data),
+  logout: () => platformApi.post('/platform/auth/logout').then(r => r.data),
+  me: () => platformApi.get('/platform/auth/me').then(r => r.data),
+};
+
+export type WorkspaceStatus = 'ACTIVE' | 'BLOCKED' | 'SUSPENDED';
+export interface Workspace {
+  id: number;
+  name: string;
+  slug: string;
+  status: WorkspaceStatus;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { users: number };
+}
+
+export const workspacesApi = {
+  getAll: () => platformApi.get('/platform/workspaces').then(r => r.data as Workspace[]),
+  getOne: (id: number) => platformApi.get(`/platform/workspaces/${id}`).then(r => r.data as Workspace),
+  getStats: () => platformApi.get('/platform/workspaces/stats').then(r => r.data),
+  create: (data: { name: string; slug: string; expiresAt?: string }) =>
+    platformApi.post('/platform/workspaces', data).then(r => r.data as Workspace),
+  update: (id: number, data: { name?: string; expiresAt?: string }) =>
+    platformApi.patch(`/platform/workspaces/${id}`, data).then(r => r.data as Workspace),
+  setStatus: (id: number, status: WorkspaceStatus) =>
+    platformApi.patch(`/platform/workspaces/${id}/status`, { status }).then(r => r.data as Workspace),
+  remove: (id: number) => platformApi.delete(`/platform/workspaces/${id}`),
+};
