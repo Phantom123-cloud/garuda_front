@@ -2,6 +2,39 @@ import axios from 'axios';
 
 export const api = axios.create({ baseURL: '/api', withCredentials: true });
 
+/** Extract workspace slug from current URL, e.g. /ws/test-3d40cd9b/admin/... → "test-3d40cd9b" */
+export function getCurrentWsSlug(): string | null {
+  if (typeof window === 'undefined') return null;
+  const m = window.location.pathname.match(/^\/ws\/([^/]+)\//);
+  return m ? m[1] : null;
+}
+
+/** Get workspace token from localStorage for given slug */
+export function getWsToken(slug: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(`ws_token_${slug}`);
+}
+
+/** Save workspace token to localStorage */
+export function setWsToken(slug: string, token: string) {
+  localStorage.setItem(`ws_token_${slug}`, token);
+}
+
+/** Remove workspace token from localStorage */
+export function removeWsToken(slug: string) {
+  localStorage.removeItem(`ws_token_${slug}`);
+}
+
+// Attach workspace Bearer token when inside /ws/:slug/admin/* routes
+api.interceptors.request.use(config => {
+  const slug = getCurrentWsSlug();
+  if (slug) {
+    const token = getWsToken(slug);
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Redirect to appropriate login on 401
 api.interceptors.response.use(
   r => r,
@@ -11,10 +44,11 @@ api.interceptors.response.use(
       if (path.startsWith('/operator')) {
         if (path !== '/operator-login') window.location.href = '/operator-login';
       } else if (path.startsWith('/ws/')) {
-        // stay on ws login page — don't redirect
+        // Extract slug and redirect back to ws login
+        const slug = getCurrentWsSlug();
+        const wsLogin = slug ? `/ws/${slug}` : '/platform/login';
+        if (!path.match(/^\/ws\/[^/]+\/?$/)) window.location.href = wsLogin;
       } else {
-        // workspace admin — go back to platform login
-        // (user should re-enter via their /ws/{slug} link)
         if (!path.startsWith('/platform')) window.location.href = '/platform/login';
       }
     }
@@ -25,7 +59,7 @@ api.interceptors.response.use(
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (login: string, password: string) =>
-    api.post('/auth/login', { login, password }).then(r => r.data),
+    api.post('/auth/login', { login, password }).then(r => r.data as { user: any; token: string }),
   operatorLogin: (login: string, password: string) =>
     api.post('/auth/operator-login', { login, password }).then(r => r.data),
   logout: () => api.post('/auth/logout').then(r => r.data),

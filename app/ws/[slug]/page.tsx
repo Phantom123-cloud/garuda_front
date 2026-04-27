@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Building2, ShieldOff } from 'lucide-react';
 import axios from 'axios';
-import { authApi } from '@/lib/api';
+import { authApi, setWsToken } from '@/lib/api';
 
 interface WorkspaceInfo {
   id: number;
@@ -42,8 +42,10 @@ export default function WorkspaceLoginPage() {
     setLoading(true);
     setError('');
     try {
-      await authApi.login(login, password);
-      window.location.href = '/admin/monitor';
+      const data = await authApi.login(login, password);
+      // Store token per workspace slug so multiple workspaces can coexist in different tabs
+      if (data?.token) setWsToken(slug, data.token);
+      window.location.href = `/ws/${slug}/admin/monitor`;
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? 'Неверный логин или пароль';
       setError(msg);

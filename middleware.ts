@@ -1,29 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Paths that never require auth
-const PUBLIC_PATHS = [
+// Paths that never require auth on the server side
+const PUBLIC_PREFIXES = [
   '/platform/login',
   '/platform/auth',
   '/operator-login',
-  '/ws/',        // workspace branded login pages
+  '/ws/',          // workspace login AND workspace admin routes (auth handled client-side)
+  '/login',        // redirects to /platform/login via page component
 ];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Always allow public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Redirect old /login to /platform/login
-  if (pathname === '/login') {
-    const url = req.nextUrl.clone();
-    url.pathname = '/platform/login';
-    return NextResponse.redirect(url);
-  }
-
-  const accessToken  = req.cookies.get('access_token')?.value;
+  const accessToken   = req.cookies.get('access_token')?.value;
   const operatorToken = req.cookies.get('operator_token')?.value;
   const platformToken = req.cookies.get('platform_token')?.value;
 
@@ -47,11 +41,9 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── Workspace admin pages (/admin/*) ───────────────────────────────────────
+  // ── Legacy /admin/* routes (cookie-based, single workspace) ───────────────
   if (pathname.startsWith('/admin')) {
     if (!accessToken) {
-      // No workspace token — send to platform login
-      // (workspace users should use their /ws/{slug} link)
       const url = req.nextUrl.clone();
       url.pathname = '/platform/login';
       return NextResponse.redirect(url);
@@ -62,17 +54,10 @@ export function middleware(req: NextRequest) {
   // ── Root path ──────────────────────────────────────────────────────────────
   if (pathname === '/') {
     const url = req.nextUrl.clone();
-    if (platformToken) url.pathname = '/platform';
-    else if (accessToken) url.pathname = '/admin/monitor';
+    if (platformToken)      url.pathname = '/platform';
+    else if (accessToken)   url.pathname = '/admin/monitor';
     else if (operatorToken) url.pathname = '/operator/softphone';
-    else url.pathname = '/platform/login';
-    return NextResponse.redirect(url);
-  }
-
-  // Any other path — if no token at all, redirect to platform login
-  if (!accessToken && !operatorToken && !platformToken) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/platform/login';
+    else                    url.pathname = '/platform/login';
     return NextResponse.redirect(url);
   }
 

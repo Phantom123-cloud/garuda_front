@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authApi } from './api';
+import { authApi, getCurrentWsSlug, getWsToken, removeWsToken } from './api';
 
 interface AuthWorkspace {
   id: number;
@@ -55,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // The api instance automatically sends the ws Bearer token via request interceptor
+    // (when on /ws/:slug/admin/* paths). Works for both cookie and localStorage auth.
     authApi.me()
       .then(setUser)
       .catch(() => setUser(null))
@@ -62,8 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = async () => {
-    await authApi.logout().catch(() => {});
-    window.location.href = '/platform/login';
+    const slug = getCurrentWsSlug();
+    if (slug) {
+      removeWsToken(slug);
+      await authApi.logout().catch(() => {});
+      window.location.href = `/ws/${slug}`;
+    } else {
+      await authApi.logout().catch(() => {});
+      window.location.href = '/platform/login';
+    }
   };
 
   const can = (permission: string): boolean => {
