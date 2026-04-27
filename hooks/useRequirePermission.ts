@@ -1,19 +1,19 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useWsNav } from '@/lib/use-ws-nav';
 
 /**
- * Redirects to /admin if the user lacks the given permission.
- * Call at the top of any protected page component.
+ * Redirects to monitor page if the user lacks the given permission.
+ * Respects workspace-namespaced routes (/ws/:slug/admin/*).
  */
 export function useRequirePermission(permission: string) {
   const { can, loading } = useAuth();
-  const router = useRouter();
+  const { replace } = useWsNav();
 
   useEffect(() => {
     if (!loading && !can(permission)) {
-      router.replace('/admin');
+      replace('/admin/monitor');
     }
   }, [loading, permission]);
 }

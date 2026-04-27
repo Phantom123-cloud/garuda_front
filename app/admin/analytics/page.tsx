@@ -1,9 +1,9 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useWsNav } from '@/lib/use-ws-nav';
 
 export default function AnalyticsRedirect() {
-  const router = useRouter();
-  useEffect(() => { router.replace('/admin/reports'); }, [router]);
+  const { replace } = useWsNav();
+  useEffect(() => { replace('/admin/reports'); }, []);
   return null;
 }

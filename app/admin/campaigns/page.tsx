@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Upload, ExternalLink, Download, FileCheck, X, PlayCircle, StopCircle, Edit2, Lock, Unlock, Trash2, MoreHorizontal, PhoneOff, PhoneIncoming, PhoneCall } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useWsNav } from '@/lib/use-ws-nav';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { campaignsApi, providersApi, formsApi, teamsApi, scriptsApi, numbersApi, dialerApi, type Campaign, type Form } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -100,6 +101,7 @@ const STATUS_FILTER_OPTS = [
 function CampaignRowMenu({ c, onDelete }: { c: Campaign; onDelete: () => void }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { push: wsPush, href: wsHref } = useWsNav();
   const qc = useQueryClient();
   const [confirmStart, setConfirmStart] = useState(false);
 
@@ -188,13 +190,13 @@ function CampaignRowMenu({ c, onDelete }: { c: Campaign; onDelete: () => void })
             )
           )}
           <DropdownSeparator />
-          <DropdownItem icon={<Edit2 size={13} />} onClick={() => router.push(`/admin/campaigns/${c.id}`)}>
+          <DropdownItem icon={<Edit2 size={13} />} onClick={() => wsPush(`/admin/campaigns/${c.id}`)}>
             Редактировать
           </DropdownItem>
-          <DropdownItem icon={<Plus size={13} />} onClick={() => router.push(`/admin/campaigns/${c.id}`)}>
+          <DropdownItem icon={<Plus size={13} />} onClick={() => wsPush(`/admin/campaigns/${c.id}`)}>
             Добавить номера
           </DropdownItem>
-          <DropdownItem icon={<PhoneOff size={13} />} onClick={() => router.push(`/admin/campaigns/${c.id}`)}>
+          <DropdownItem icon={<PhoneOff size={13} />} onClick={() => wsPush(`/admin/campaigns/${c.id}`)}>
             Удалить номера
           </DropdownItem>
           <DropdownSeparator />
@@ -225,6 +227,7 @@ export default function CampaignsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
   const { toast } = useToast();
   const { can } = useAuth();
+  const { href: wsHref } = useWsNav();
   const canManage = can('CAMPAIGNS_MANAGE');
   const qc = useQueryClient();
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -545,7 +548,7 @@ export default function CampaignsPage() {
                       <div className="text-xs text-muted-foreground">{c.form?.name ?? '—'}</div>
                     </div>
                     {canManage && (
-                      <Link href={`/admin/campaigns/${c.id}`} className="text-muted-foreground hover:text-primary transition-colors ml-1">
+                      <Link href={wsHref(`/admin/campaigns/${c.id}`)} className="text-muted-foreground hover:text-primary transition-colors ml-1">
                         <ExternalLink size={13} />
                       </Link>
                     )}

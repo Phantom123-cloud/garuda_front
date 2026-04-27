@@ -1,0 +1,57 @@
+
+> ats-frontend@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/27) ...
+   Generating static pages (6/27) 
+   Generating static pages (13/27) 
+   Generating static pages (20/27) 
+ ✓ Generating static pages (27/27)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    147 B          87.5 kB
+├ ○ /_not-found                          876 B          88.2 kB
+├ ○ /admin                               2.04 kB         113 kB
+├ ○ /admin/analytics                     361 B          87.7 kB
+├ ○ /admin/blacklist                     5.18 kB         147 kB
+├ ○ /admin/callbacks                     5.22 kB         123 kB
+├ ○ /admin/campaigns                     7.5 kB          179 kB
+├ ƒ /admin/campaigns/[id]                14.9 kB         177 kB
+├ ○ /admin/cause-codes                   5.48 kB         117 kB
+├ ○ /admin/forms                         20.4 kB         151 kB
+├ ○ /admin/import-history                3.35 kB         123 kB
+├ ○ /admin/media                         19.8 kB         140 kB
+├ ○ /admin/monitor                       5.47 kB         140 kB
+├ ○ /admin/providers                     4.83 kB         167 kB
+├ ○ /admin/reports                       7.09 kB         127 kB
+├ ○ /admin/roles                         5.16 kB         147 kB
+├ ○ /admin/scripts                       4.56 kB         135 kB
+├ ○ /admin/settings                      5.74 kB         132 kB
+├ ○ /admin/teams                         6.76 kB         169 kB
+├ ○ /admin/users                         3.93 kB         167 kB
+├ ○ /icon.svg                            0 B                0 B
+├ ○ /login                               4.74 kB         114 kB
+├ ○ /operator                            70.6 kB         203 kB
+├ ○ /operator-login                      4.32 kB         113 kB
+├ ○ /platform                            6.65 kB         116 kB
+└ ○ /platform/login                      4.32 kB         113 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/2117-b0af60806909376e.js      31.7 kB
+  ├ chunks/fd9d1056-96f08e3f6bc78df7.js  53.6 kB
+  └ other shared chunks (total)          1.96 kB
+
+
+ƒ Middleware                             26.6 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

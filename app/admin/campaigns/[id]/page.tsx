@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useWsNav } from '@/lib/use-ws-nav';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import {
@@ -309,6 +310,7 @@ export default function CampaignDetailPage() {
   useRequirePermission('CAMPAIGNS_MANAGE');
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { push: wsPush } = useWsNav();
   const { toast } = useToast();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -540,7 +542,7 @@ export default function CampaignDetailPage() {
 
   const removeCampaign = useMutation({
     mutationFn: () => campaignsApi.remove(campaignId),
-    onSuccess: () => { toast('Кампания удалена', 'success'); router.push('/admin/campaigns'); },
+    onSuccess: () => { toast('Кампания удалена', 'success'); wsPush('/admin/campaigns'); },
     onError: () => toast('Ошибка удаления', 'error'),
   });
 

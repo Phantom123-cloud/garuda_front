@@ -3,25 +3,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
+import { getCurrentWsSlug } from '@/lib/api';
 import { GarudaLogo } from '@/components/GarudaLogo';
 import {
   LayoutDashboard, Users, UsersRound, PhoneCall,
   FileText, Plug, Mic, BarChart3, Headphones,
-  PhoneIncoming, ShieldOff, BookOpen, LogOut, History, BookMarked, Shield, Settings,
+  ShieldOff, BookOpen, LogOut, History, BookMarked, Shield, Settings,
   Building2,
   type LucideIcon,
 } from 'lucide-react';
 
 type NavItem = {
   label: string;
-  href: string;
+  href: string; // always /admin/* or /operator/*
   icon: LucideIcon;
   permission?: string;
 };
 type NavGroup = { section: string; items: NavItem[] };
 
-/** Each nav item may require one or more permissions (OR logic — any one is enough).
- *  Omitting `permission` means always visible. */
 const nav: NavGroup[] = [
   {
     section: 'Мониторинг',
@@ -32,14 +31,14 @@ const nav: NavGroup[] = [
   {
     section: 'Управление',
     items: [
-      { label: 'Пользователи',    href: '/admin/users',           icon: Users,     permission: 'USERS_VIEW' },
-      { label: 'Роли',            href: '/admin/roles',           icon: Shield,    permission: 'ROLES_MANAGE' },
-      { label: 'Команды',         href: '/admin/teams',           icon: UsersRound, permission: 'TEAMS_VIEW' },
-      { label: 'Кампании',        href: '/admin/campaigns',       icon: PhoneCall, permission: 'CAMPAIGNS_VIEW' },
-      { label: 'Формы',           href: '/admin/forms',           icon: FileText,  permission: 'FORMS_MANAGE' },
-      { label: 'Скрипты',         href: '/admin/scripts',         icon: BookOpen,  permission: 'SCRIPTS_MANAGE' },
-      { label: 'Чёрный список',   href: '/admin/blacklist',       icon: ShieldOff, permission: 'BLACKLIST_MANAGE' },
-      { label: 'История импортов', href: '/admin/import-history', icon: History,   permission: 'IMPORT_HISTORY_VIEW' },
+      { label: 'Пользователи',     href: '/admin/users',           icon: Users,      permission: 'USERS_VIEW' },
+      { label: 'Роли',             href: '/admin/roles',           icon: Shield,     permission: 'ROLES_MANAGE' },
+      { label: 'Команды',          href: '/admin/teams',           icon: UsersRound, permission: 'TEAMS_VIEW' },
+      { label: 'Кампании',         href: '/admin/campaigns',       icon: PhoneCall,  permission: 'CAMPAIGNS_VIEW' },
+      { label: 'Формы',            href: '/admin/forms',           icon: FileText,   permission: 'FORMS_MANAGE' },
+      { label: 'Скрипты',          href: '/admin/scripts',         icon: BookOpen,   permission: 'SCRIPTS_MANAGE' },
+      { label: 'Чёрный список',    href: '/admin/blacklist',       icon: ShieldOff,  permission: 'BLACKLIST_MANAGE' },
+      { label: 'История импортов', href: '/admin/import-history',  icon: History,    permission: 'IMPORT_HISTORY_VIEW' },
     ],
   },
   {
@@ -65,10 +64,22 @@ const nav: NavGroup[] = [
   },
 ];
 
-
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname(); // browser URL, e.g. /ws/test-3d40cd9b/admin/monitor
   const { user, logout, can } = useAuth();
+
+  // Detect workspace slug from the current URL
+  // If inside /ws/:slug/admin/*, prefix all links with /ws/:slug
+  const wsSlug = getCurrentWsSlug();
+  const prefix = wsSlug ? `/ws/${wsSlug}` : '';
+
+  // Resolve the canonical /admin/* path from the current browser URL
+  // so active state works regardless of whether we're on /admin/* or /ws/:slug/admin/*
+  const canonicalPath = wsSlug
+    ? pathname.replace(`/ws/${wsSlug}`, '')  // strip the ws prefix → /admin/monitor
+    : pathname;
+
+  const link = (href: string) => `${prefix}${href}`;
 
   return (
     <aside className="w-[220px] bg-card border-r border-border flex flex-col flex-shrink-0 h-screen sticky top-0">
@@ -111,11 +122,14 @@ export function Sidebar() {
               <div className="space-y-0.5">
                 {visibleItems.map(item => {
                   const Icon = item.icon;
-                  const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                  const resolvedHref = link(item.href);
+                  const active =
+                    canonicalPath === item.href ||
+                    (item.href !== '/' && canonicalPath.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
+                      href={resolvedHref}
                       className={cn(
                         'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] transition-all duration-100',
                         'relative group',
