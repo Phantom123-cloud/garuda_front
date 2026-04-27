@@ -5,7 +5,8 @@ export const api = axios.create({ baseURL: '/api', withCredentials: true });
 /** Extract workspace slug from current URL, e.g. /ws/test-3d40cd9b/admin/... → "test-3d40cd9b" */
 export function getCurrentWsSlug(): string | null {
   if (typeof window === 'undefined') return null;
-  const m = window.location.pathname.match(/^\/ws\/([^/]+)\//);
+  // Match /ws/:slug followed by / or end-of-string
+  const m = window.location.pathname.match(/^\/ws\/([^/]+)(\/|$)/);
   return m ? m[1] : null;
 }
 

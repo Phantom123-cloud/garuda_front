@@ -16,8 +16,8 @@ export function useWsNav() {
   const resolve = (path: string): string => {
     const slug = getCurrentWsSlug();
     if (!slug) return path;
-    // Only prefix /admin/* and /operator/* paths
-    if (path.startsWith('/admin/') || path.startsWith('/operator/')) {
+    // Prefix /admin/* and /operator/* paths
+    if (path.startsWith('/admin') || path.startsWith('/operator')) {
       return `/ws/${slug}${path}`;
     }
     return path;

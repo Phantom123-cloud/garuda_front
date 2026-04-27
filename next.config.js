@@ -10,15 +10,22 @@ const nextConfig = {
         destination: `${backendUrl}/api/:path*`,
       },
       // ── Workspace-namespaced admin routes ──────────────────────────────────
-      // /ws/:slug/admin/... → /admin/...  (transparent rewrite, browser URL stays)
       {
         source: '/ws/:slug/admin/:path*',
         destination: '/admin/:path*',
       },
-      // /ws/:slug/admin  → /admin/monitor  (default redirect)
       {
         source: '/ws/:slug/admin',
         destination: '/admin/monitor',
+      },
+      // ── Workspace-namespaced operator routes ───────────────────────────────
+      {
+        source: '/ws/:slug/operator/:path*',
+        destination: '/operator/:path*',
+      },
+      {
+        source: '/ws/:slug/operator',
+        destination: '/operator/softphone',
       },
     ];
   },
