@@ -8,23 +8,44 @@ import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const pathname = usePathname(); // browser URL, e.g. /ws/test-3d40cd9b/admin/monitor
+  const pathname = usePathname(); // browser URL
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
-    const slug = getCurrentWsSlug();
+
+    const slug = getCurrentWsSlug(); // from /ws/:slug/admin/* URLs
+
     if (slug) {
-      // Workspace-namespaced route — check localStorage token
+      // Inside /ws/:slug/admin/* — check localStorage token
       const token = getWsToken(slug);
       if (!token) router.replace(`/ws/${slug}`);
     } else {
-      // Legacy /admin/* route — check cookie auth
-      if (!user) router.replace('/platform/login');
+      // Direct /admin/* access — redirect to workspace-namespaced URL
+      if (!user) {
+        router.replace('/platform/login');
+        return;
+      }
+      const wsSlug = (user as any).workspace?.slug;
+      if (wsSlug) {
+        // Preserve current path: /admin/campaigns → /ws/:slug/admin/campaigns
+        const wsPath = `/ws/${wsSlug}${pathname}`;
+        router.replace(wsPath);
+      }
     }
   }, [user, loading, pathname, router]);
 
   if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 size={24} className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // While redirecting from /admin/* to /ws/:slug/admin/* — show spinner
+  const slug = getCurrentWsSlug();
+  if (!slug && user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 size={24} className="animate-spin text-muted-foreground" />
