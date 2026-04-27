@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, UsersRound, PhoneCall,
   FileText, Plug, Mic, BarChart3, Headphones,
   PhoneIncoming, ShieldOff, BookOpen, LogOut, History, BookMarked, Shield, Settings,
+  Building2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -71,12 +72,27 @@ export function Sidebar() {
 
   return (
     <aside className="w-[220px] bg-card border-r border-border flex flex-col flex-shrink-0 h-screen sticky top-0">
-      {/* Logo */}
+      {/* Workspace header */}
       <div className="px-4 py-4 border-b border-border flex items-center gap-2.5">
-        <GarudaLogo size={28} />
-        <div>
-          <div className="text-[13px] font-semibold text-foreground leading-tight">Garuda ATS</div>
-          <div className="text-[10px] text-muted-foreground">v1.0</div>
+        {user?.workspace?.logoUrl ? (
+          <img
+            src={user.workspace.logoUrl}
+            alt={user.workspace.name}
+            className="w-7 h-7 rounded-lg object-cover flex-shrink-0"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : user?.workspace ? (
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Building2 size={14} className="text-primary" />
+          </div>
+        ) : (
+          <GarudaLogo size={28} />
+        )}
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
+            {user?.workspace?.name ?? 'Garuda ATS'}
+          </div>
+          <div className="text-[10px] text-muted-foreground">Garuda ATS</div>
         </div>
       </div>
 

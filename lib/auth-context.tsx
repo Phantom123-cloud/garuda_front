@@ -2,11 +2,21 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authApi } from './api';
 
+interface AuthWorkspace {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  status: string;
+}
+
 interface AuthUser {
   id: number;
   name: string;
   login: string;
   status: string;
+  workspaceId?: number;
+  workspace?: AuthWorkspace;
   permissions?: string[];
   customRoleId?: number | null;
   customRole?: { id: number; name: string; permissions: string[] } | null;
@@ -30,7 +40,6 @@ interface AuthCtx {
   user: AuthUser | null;
   loading: boolean;
   logout: () => Promise<void>;
-  /** Returns true if user has the given permission in their custom role */
   can: (permission: string) => boolean;
 }
 
@@ -54,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await authApi.logout().catch(() => {});
-    window.location.href = '/login';
+    window.location.href = '/platform/login';
   };
 
   const can = (permission: string): boolean => {
