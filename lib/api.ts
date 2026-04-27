@@ -2,14 +2,20 @@ import axios from 'axios';
 
 export const api = axios.create({ baseURL: '/api', withCredentials: true });
 
-// Redirect to login on 401
+// Redirect to appropriate login on 401
 api.interceptors.response.use(
   r => r,
   err => {
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       const path = window.location.pathname;
-      if (path !== '/login' && path !== '/operator-login') {
-        window.location.href = '/login';
+      if (path.startsWith('/operator')) {
+        if (path !== '/operator-login') window.location.href = '/operator-login';
+      } else if (path.startsWith('/ws/')) {
+        // stay on ws login page — don't redirect
+      } else {
+        // workspace admin — go back to platform login
+        // (user should re-enter via their /ws/{slug} link)
+        if (!path.startsWith('/platform')) window.location.href = '/platform/login';
       }
     }
     return Promise.reject(err);
