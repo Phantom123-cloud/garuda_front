@@ -4,15 +4,15 @@ import { useRouter } from 'next/navigation';
 import {
   Plus, Building2, Users, ShieldOff, ShieldCheck, Clock,
   MoreHorizontal, Trash2, Ban, CheckCircle, Loader2, Search,
-  Activity, XCircle, AlertCircle, Calendar, Eye,
+  Activity, XCircle, AlertCircle, Calendar, Eye, LogIn, Link2,
 } from 'lucide-react';
 import { workspacesApi, type Workspace, type WorkspaceStatus } from '@/lib/api';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function statusLabel(s: WorkspaceStatus) {
-  if (s === 'ACTIVE')    return { label: 'Активно',       color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
-  if (s === 'BLOCKED')   return { label: 'Заблокировано', color: 'text-destructive',  bg: 'bg-destructive/10' };
-  if (s === 'SUSPENDED') return { label: 'Приостановлено',color: 'text-amber-500',    bg: 'bg-amber-500/10'   };
+  if (s === 'ACTIVE')    return { label: 'Активно',        color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+  if (s === 'BLOCKED')   return { label: 'Заблокировано',  color: 'text-destructive',  bg: 'bg-destructive/10' };
+  if (s === 'SUSPENDED') return { label: 'Приостановлено', color: 'text-amber-500',    bg: 'bg-amber-500/10'   };
   return { label: s, color: 'text-muted-foreground', bg: 'bg-muted' };
 }
 
@@ -26,10 +26,36 @@ function isExpired(expiresAt: string | null | undefined) {
   return new Date(expiresAt) < new Date();
 }
 
+function wsLoginUrl(slug: string) {
+  if (typeof window !== 'undefined') return `${window.location.origin}/ws/${slug}`;
+  return `/ws/${slug}`;
+}
+
+// ─── Workspace Logo ──────────────────────────────────────────────────────────
+function WsLogo({ ws }: { ws: Workspace }) {
+  if (ws.logoUrl) {
+    return (
+      <img
+        src={ws.logoUrl}
+        alt={ws.name}
+        className="w-7 h-7 rounded-lg object-cover flex-shrink-0"
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+    );
+  }
+  return (
+    <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
+      <Building2 size={13} className="text-primary" />
+    </div>
+  );
+}
+
 // ─── Create Workspace Dialog ─────────────────────────────────────────────────
 function CreateDialog({ onCreated, onClose }: { onCreated: () => void; onClose: () => void }) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [rootPassword, setRootPassword] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,10 +71,17 @@ function CreateDialog({ onCreated, onClose }: { onCreated: () => void; onClose: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !slug.trim()) { setError('Заполните название и slug'); return; }
+    if (!rootPassword.trim()) { setError('Введите пароль для root-администратора'); return; }
     setLoading(true);
     setError('');
     try {
-      await workspacesApi.create({ name: name.trim(), slug: slug.trim(), expiresAt: expiresAt || undefined });
+      await workspacesApi.create({
+        name: name.trim(),
+        slug: slug.trim(),
+        rootPassword: rootPassword,
+        logoUrl: logoUrl.trim() || undefined,
+        expiresAt: expiresAt || undefined,
+      });
       onCreated();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Ошибка создания');
@@ -88,7 +121,33 @@ function CreateDialog({ onCreated, onClose }: { onCreated: () => void; onClose: 
               placeholder="ooo-romashka"
               className="flex h-9 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono"
             />
-            <p className="text-xs text-muted-foreground">Только латинские буквы, цифры и дефисы</p>
+            <p className="text-xs text-muted-foreground">
+              Только латинские буквы, цифры и дефисы. Логин root-admin = slug
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">
+              Пароль root-администратора <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="password"
+              value={rootPassword}
+              onChange={e => setRootPassword(e.target.value)}
+              placeholder="••••••••"
+              className="flex h-9 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <p className="text-xs text-muted-foreground">Логин будет: {slug || 'slug'}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">URL логотипа (необязательно)</label>
+            <input
+              value={logoUrl}
+              onChange={e => setLogoUrl(e.target.value)}
+              placeholder="https://example.com/logo.png"
+              className="flex h-9 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -176,7 +235,7 @@ function WorkspaceActions({ ws, onRefresh }: { ws: Workspace; onRefresh: () => v
             <div className="my-1 border-t border-border" />
             <button
               onClick={() => {
-                if (!confirm(`Удалить пространство "${ws.name}"? Все пользователи потеряют доступ.`)) return;
+                if (!confirm(`Удалить пространство "${ws.name}"? Все данные будут удалены.`)) return;
                 act(() => workspacesApi.remove(ws.id));
               }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-destructive hover:bg-muted/50 transition-colors"
@@ -198,6 +257,7 @@ export default function PlatformPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [enteringId, setEnteringId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -212,16 +272,31 @@ export default function PlatformPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleEnter = async (ws: Workspace) => {
+    setEnteringId(ws.id);
+    try {
+      await workspacesApi.impersonate(ws.id);
+      window.location.href = '/admin/monitor';
+    } catch {
+      setEnteringId(null);
+    }
+  };
+
+  const copyLink = (slug: string) => {
+    const url = wsLoginUrl(slug);
+    navigator.clipboard.writeText(url).catch(() => {});
+  };
+
   const filtered = workspaces.filter(w =>
     w.name.toLowerCase().includes(search.toLowerCase()) ||
     w.slug.toLowerCase().includes(search.toLowerCase()),
   );
 
   const statCards = stats ? [
-    { label: 'Всего',           value: stats.total,    icon: Building2,    color: 'text-foreground'   },
-    { label: 'Активных',        value: stats.active,   icon: ShieldCheck,  color: 'text-emerald-500'  },
-    { label: 'Заблокировано',   value: stats.blocked,  icon: ShieldOff,    color: 'text-destructive'  },
-    { label: 'Приостановлено',  value: stats.suspended,icon: Clock,        color: 'text-amber-500'    },
+    { label: 'Всего',          value: stats.total,     icon: Building2,   color: 'text-foreground'  },
+    { label: 'Активных',       value: stats.active,    icon: ShieldCheck, color: 'text-emerald-500' },
+    { label: 'Заблокировано',  value: stats.blocked,   icon: ShieldOff,   color: 'text-destructive' },
+    { label: 'Приостановлено', value: stats.suspended, icon: Clock,       color: 'text-amber-500'   },
   ] : [];
 
   return (
@@ -294,10 +369,10 @@ export default function PlatformPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Название</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Slug</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Ссылка входа</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Статус</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                  <div className="flex items-center gap-1.5"><Users size={11} /> Пользователи</div>
+                  <div className="flex items-center gap-1.5"><Users size={11} /> Польз.</div>
                 </th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
                   <div className="flex items-center gap-1.5"><Calendar size={11} /> Истекает</div>
@@ -310,18 +385,27 @@ export default function PlatformPage() {
               {filtered.map(ws => {
                 const { label, color, bg } = statusLabel(ws.status);
                 const expired = isExpired(ws.expiresAt);
+                const isEntering = enteringId === ws.id;
                 return (
                   <tr key={ws.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
-                          <Building2 size={13} className="text-primary" />
+                        <WsLogo ws={ws} />
+                        <div>
+                          <div className="font-medium text-foreground leading-tight">{ws.name}</div>
+                          <code className="text-xs text-muted-foreground/70">{ws.rootAdminLogin}</code>
                         </div>
-                        <span className="font-medium text-foreground">{ws.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{ws.slug}</code>
+                      <button
+                        onClick={() => copyLink(ws.slug)}
+                        title="Скопировать ссылку входа"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                      >
+                        <Link2 size={11} className="group-hover:text-primary" />
+                        <span className="font-mono truncate max-w-[160px]">/ws/{ws.slug}</span>
+                      </button>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${bg} ${color}`}>
@@ -344,6 +428,17 @@ export default function PlatformPage() {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1 justify-end">
+                        {/* Enter workspace */}
+                        <button
+                          onClick={() => handleEnter(ws)}
+                          disabled={isEntering || ws.status !== 'ACTIVE'}
+                          title="Войти в пространство"
+                          className="flex items-center gap-1 h-7 px-2 rounded-md text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isEntering ? <Loader2 size={11} className="animate-spin" /> : <LogIn size={11} />}
+                          Войти
+                        </button>
+                        {/* Detail view */}
                         <button
                           onClick={() => router.push(`/platform/workspaces/${ws.id}`)}
                           title="Открыть"

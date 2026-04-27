@@ -353,6 +353,8 @@ export interface Workspace {
   id: number;
   name: string;
   slug: string;
+  logoUrl: string | null;
+  rootAdminLogin: string;
   status: WorkspaceStatus;
   expiresAt: string | null;
   createdAt: string;
@@ -364,11 +366,13 @@ export const workspacesApi = {
   getAll: () => platformApi.get('/platform/workspaces').then(r => r.data as Workspace[]),
   getOne: (id: number) => platformApi.get(`/platform/workspaces/${id}`).then(r => r.data as Workspace),
   getStats: () => platformApi.get('/platform/workspaces/stats').then(r => r.data),
-  create: (data: { name: string; slug: string; expiresAt?: string }) =>
+  create: (data: { name: string; slug: string; rootPassword: string; logoUrl?: string; expiresAt?: string }) =>
     platformApi.post('/platform/workspaces', data).then(r => r.data as Workspace),
-  update: (id: number, data: { name?: string; expiresAt?: string }) =>
+  update: (id: number, data: { name?: string; logoUrl?: string; expiresAt?: string }) =>
     platformApi.patch(`/platform/workspaces/${id}`, data).then(r => r.data as Workspace),
   setStatus: (id: number, status: WorkspaceStatus) =>
     platformApi.patch(`/platform/workspaces/${id}/status`, { status }).then(r => r.data as Workspace),
   remove: (id: number) => platformApi.delete(`/platform/workspaces/${id}`),
+  impersonate: (id: number) =>
+    platformApi.post(`/platform/workspaces/${id}/impersonate`).then(r => r.data),
 };

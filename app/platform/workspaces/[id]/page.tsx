@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Users, Plus, Building2, Loader2, Shield, ShieldOff,
   CheckCircle, Ban, AlertCircle, Trash2, Calendar, Activity, XCircle,
+  LogIn, Link2, ExternalLink,
 } from 'lucide-react';
 import { workspacesApi, platformApi, type Workspace, type WorkspaceStatus } from '@/lib/api';
 
@@ -17,6 +18,11 @@ function statusLabel(s: WorkspaceStatus) {
 function formatDate(d: string | null | undefined) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function wsLoginUrl(slug: string) {
+  if (typeof window !== 'undefined') return `${window.location.origin}/ws/${slug}`;
+  return `/ws/${slug}`;
 }
 
 // ─── Add User Dialog ─────────────────────────────────────────────────────────
@@ -108,6 +114,7 @@ export default function WorkspaceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [enterLoading, setEnterLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,6 +132,16 @@ export default function WorkspaceDetailPage() {
     setActionLoading(true);
     try { await workspacesApi.setStatus(workspaceId, status); await load(); }
     finally { setActionLoading(false); }
+  };
+
+  const handleEnterWorkspace = async () => {
+    setEnterLoading(true);
+    try {
+      await workspacesApi.impersonate(workspaceId);
+      window.location.href = '/admin/monitor';
+    } catch {
+      setEnterLoading(false);
+    }
   };
 
   const toggleUser = async (userId: number) => {
@@ -149,6 +166,7 @@ export default function WorkspaceDetailPage() {
   if (!ws) return null;
 
   const { label, color, bg } = statusLabel(ws.status);
+  const loginUrl = wsLoginUrl(ws.slug);
 
   return (
     <>
@@ -166,20 +184,70 @@ export default function WorkspaceDetailPage() {
           className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
           <ArrowLeft size={15} />
         </button>
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Building2 size={17} className="text-primary" />
-          </div>
-          <div>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {ws.logoUrl ? (
+            <img
+              src={ws.logoUrl}
+              alt={ws.name}
+              className="w-9 h-9 rounded-xl object-cover flex-shrink-0"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Building2 size={17} className="text-primary" />
+            </div>
+          )}
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-foreground">{ws.name}</h1>
-            <code className="text-xs text-muted-foreground">{ws.slug}</code>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <code>{ws.rootAdminLogin}</code>
+              <span>·</span>
+              <code className="truncate">{ws.slug}</code>
+            </div>
           </div>
-          <span className={`ml-2 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${bg} ${color}`}>
+          <span className={`ml-2 inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${bg} ${color}`}>
             {ws.status === 'ACTIVE'    && <Activity size={10} />}
             {ws.status === 'BLOCKED'   && <XCircle size={10} />}
             {ws.status === 'SUSPENDED' && <AlertCircle size={10} />}
             {label}
           </span>
+        </div>
+
+        {/* Enter workspace button */}
+        <button
+          onClick={handleEnterWorkspace}
+          disabled={enterLoading || ws.status !== 'ACTIVE'}
+          className="flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/88 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+        >
+          {enterLoading ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+          Войти в пространство
+        </button>
+      </div>
+
+      {/* Login URL card */}
+      <div className="bg-card border border-border rounded-xl p-4 mb-6 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+          <Link2 size={14} className="text-muted-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-muted-foreground mb-0.5">Ссылка для входа</div>
+          <code className="text-sm text-foreground truncate block">{loginUrl}</code>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigator.clipboard.writeText(loginUrl).catch(() => {})}
+            className="h-7 px-2.5 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            Копировать
+          </button>
+          <a
+            href={loginUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <ExternalLink size={12} />
+          </a>
         </div>
       </div>
 
@@ -268,7 +336,7 @@ export default function WorkspaceDetailPage() {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Users size={32} className="text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">Нет пользователей</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Добавьте первого администратора для этого пространства</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Root-администратор создаётся автоматически</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -276,6 +344,7 @@ export default function WorkspaceDetailPage() {
               <tr className="border-b border-border">
                 <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">Имя</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Логин</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Роль</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Статус</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Создан</th>
                 <th className="px-4 py-3" />
@@ -296,6 +365,13 @@ export default function WorkspaceDetailPage() {
                     <code className="text-xs text-muted-foreground">{u.login}</code>
                   </td>
                   <td className="px-4 py-3.5">
+                    {u.isRoot ? (
+                      <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">Root</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${u.status === 'ACTIVE' ? 'text-emerald-500 bg-emerald-500/10' : 'text-destructive bg-destructive/10'}`}>
                       {u.status === 'ACTIVE' ? 'Активен' : 'Заблокирован'}
                     </span>
@@ -303,15 +379,19 @@ export default function WorkspaceDetailPage() {
                   <td className="px-4 py-3.5 text-muted-foreground">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => toggleUser(u.id)}
-                        title={u.status === 'ACTIVE' ? 'Заблокировать' : 'Разблокировать'}
-                        className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
-                        {u.status === 'ACTIVE' ? <ShieldOff size={13} /> : <Shield size={13} />}
-                      </button>
-                      <button onClick={() => removeUser(u.id)}
-                        className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                        <Trash2 size={13} />
-                      </button>
+                      {!u.isRoot && (
+                        <>
+                          <button onClick={() => toggleUser(u.id)}
+                            title={u.status === 'ACTIVE' ? 'Заблокировать' : 'Разблокировать'}
+                            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
+                            {u.status === 'ACTIVE' ? <ShieldOff size={13} /> : <Shield size={13} />}
+                          </button>
+                          <button onClick={() => removeUser(u.id)}
+                            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
