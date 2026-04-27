@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   Plus, Building2, Users, ShieldOff, ShieldCheck, Clock,
@@ -186,7 +187,9 @@ function CreateDialog({ onCreated, onClose }: { onCreated: () => void; onClose: 
 // ─── Workspace Row Actions ───────────────────────────────────────────────────
 function WorkspaceActions({ ws, onRefresh }: { ws: Workspace; onRefresh: () => void }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const [loading, setLoading] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const act = async (action: () => Promise<any>) => {
     setLoading(true);
@@ -195,19 +198,35 @@ function WorkspaceActions({ ws, onRefresh }: { ws: Workspace; onRefresh: () => v
     finally { setLoading(false); }
   };
 
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      // dropdown width ~192px; open upward if not enough space below
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropH = 160; // approx height
+      const top = spaceBelow < dropH ? rect.top - dropH - 4 : rect.bottom + 4;
+      setPos({ top, left: rect.right - 192 });
+    }
+    setOpen(p => !p);
+  };
+
   return (
-    <div className="relative">
+    <div>
       <button
-        onClick={() => setOpen(p => !p)}
+        ref={btnRef}
+        onClick={handleOpen}
         disabled={loading}
         className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors disabled:opacity-50"
       >
         {loading ? <Loader2 size={13} className="animate-spin" /> : <MoreHorizontal size={14} />}
       </button>
-      {open && (
+      {open && typeof window !== 'undefined' && createPortal(
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 bg-popover border border-border rounded-lg shadow-lg py-1 w-48 text-sm">
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-50 bg-popover border border-border rounded-lg shadow-lg py-1 w-48 text-sm"
+            style={{ top: pos.top, left: pos.left }}
+          >
             {ws.status !== 'ACTIVE' && (
               <button
                 onClick={() => act(() => workspacesApi.setStatus(ws.id, 'ACTIVE'))}
@@ -243,7 +262,8 @@ function WorkspaceActions({ ws, onRefresh }: { ws: Workspace; onRefresh: () => v
               <Trash2 size={13} /> Удалить
             </button>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
