@@ -75,6 +75,12 @@ export function useSIP(): UseSIPReturn {
       register_expires: 300,
       connection_recovery_min_interval: 2,
       connection_recovery_max_interval: 30,
+      pcConfig: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      },
     });
 
     ua.on('connecting', () => setStatus('connecting'));
@@ -135,10 +141,10 @@ export function useSIP(): UseSIPReturn {
         mediaConstraints: { audio: true, video: false },
         mediaStream: stream,
         pcConfig: {
-          // No external STUN — Asterisk and browser are on the same LAN,
-          // host candidates (192.168.x.x) work directly without STUN lookup.
-          // External STUN (stun.l.google.com) adds 10-20s delay if internet is slow.
-          iceServers: [],
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ],
         },
       };
 
