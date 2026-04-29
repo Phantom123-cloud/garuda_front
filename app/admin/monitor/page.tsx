@@ -478,7 +478,7 @@ export default function MonitorPage() {
   // ── Real-time: invalidate monitor immediately when any operator changes status ──
   useEffect(() => {
     const backendBase = typeof window !== 'undefined'
-      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      ? window.location.origin
       : 'http://localhost:3001';
     const socket = io(`${backendBase}/ws`, {
       path: '/socket.io',

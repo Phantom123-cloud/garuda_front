@@ -64,7 +64,12 @@ export function useSIP(): UseSIPReturn {
     JsSIP.debug.disable('JsSIP:*');
 
     const wsPort = config.asteriskWsPort ?? 8088;
-    const socket = new JsSIP.WebSocketInterface(`ws://${config.asteriskHost}:${wsPort}/ws`);
+    // On HTTPS pages use wss:// through nginx proxy (/ws → Asterisk:8088)
+    // On HTTP (dev) connect directly to Asterisk
+    const wsUrl = typeof window !== 'undefined' && window.location.protocol === 'https:'
+      ? `wss://${window.location.host}/ws`
+      : `ws://${config.asteriskHost}:${wsPort}/ws`;
+    const socket = new JsSIP.WebSocketInterface(wsUrl);
 
     const ua = new JsSIP.UA({
       sockets: [socket],
