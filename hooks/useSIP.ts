@@ -142,7 +142,14 @@ export function useSIP(): UseSIPReturn {
         pcConfig: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
+            {
+              urls: [
+                'turn:188.137.254.172:3478?transport=udp',
+                'turn:188.137.254.172:3478?transport=tcp',
+              ],
+              username: 'ats',
+              credential: 'atspassword123',
+            },
           ],
         },
       };
