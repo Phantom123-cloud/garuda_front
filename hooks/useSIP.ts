@@ -75,13 +75,7 @@ export function useSIP(): UseSIPReturn {
       register_expires: 300,
       connection_recovery_min_interval: 2,
       connection_recovery_max_interval: 30,
-      pcConfig: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-        ],
-      },
-    });
+    } as any);
 
     ua.on('connecting', () => setStatus('connecting'));
     ua.on('connected', () => setStatus('connecting'));
